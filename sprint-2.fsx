@@ -82,8 +82,8 @@ let dgtVAT (x: float) n = x + ((x * n) / 100.0)
 dgtVAT 200.0 VAT // testing
 
 type DTGCafeMessage =
-    | OrderDrink of Drink * float // Drink, qty
-    | LeaveAComment of string // ”Comment-super!”
+    | OrderDrink of Drink * float
+    | LeaveAComment of string
 
 
 type Bar() =
@@ -95,7 +95,7 @@ type Bar() =
                         let! msg = inbox.Receive()
 
                         match msg with
-                        | (drink, amount) ->
+                        | OrderDrink (drink, amount) ->
                             let drinkPrice : float = getPrice drink
                             let mutable totalPrice = ((drinkPrice: float) * (amount: float))
 
@@ -103,11 +103,14 @@ type Bar() =
                                 totalPrice <- dgtVAT totalPrice VAT
 
                             printfn
-                                "Please pay DKK%d for your %d %A drinks. %s!"
+                                "Please pay DKK%d for your %d %A %A drinks. %s!"
                                 (Convert.ToInt32(totalPrice))
                                 (Convert.ToInt32(amount))
                                 (string drink.type')
-                                 "Thanks!"
+                                (string drink.size)
+                                "Thanks!"
+                        | LeaveAComment (comment) -> printf "Comment: %A" comment
+
                         return! messageLoop ()
                     }
 
@@ -120,24 +123,13 @@ type Bar() =
 let bar = Bar()
 let testDrink = { type' = Coffee; size = Small }
 
-//let orderMsg : (DTGCafeMessage, DTGCafeMessage) = ((testDrink, 2.0) , "Thanks")
+bar.Order(OrderDrink({ type' = Coffee; size = Small }, 2.0))
 
-bar.Order ({type'=Coffee; size=Small}, 2.0)
+let orderDrinks =
+    [ (OrderDrink({ type' = Coffee; size = Small }, 1.0))
+      (OrderDrink({ type' = Coffee; size = Medium }, 2.0))
+      (OrderDrink({ type' = Juice; size = Small }, 3.0))
+      (OrderDrink({ type' = Soda; size = Medium }, 4.0))
+      (OrderDrink({ type' = Milk; size = Large }, 5.0)) ]
 
-
-
-
-let listOfDrinks =
-    [ (({ type' = Coffee; size = Small }, 2.0))
-      (({ type' = Coffee; size = Medium }, 3.0))
-      (({ type' = Soda; size = Large }, 1.0))
-      (({ type' = Juice; size = Small }, 2.0))
-      (({ type' = Juice; size = Large }, 4.0)) ]
-
-let simulateOrders =
-    let bar = Bar()
-    listOfDrinks
-        |> List.map (fun o -> bar.Order o)
-
-
-let task = 
+orderDrinks |> List.map (fun o -> bar.Order o)
